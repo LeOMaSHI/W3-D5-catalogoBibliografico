@@ -187,9 +187,24 @@ public class Main {
 
     private static void ricercaPrestitiScaduti() {
         EntityManager em = emf.createEntityManager();
-        PrestitoDAO dao = new PrestitoDAO(em);
-        List<Prestito> scaduti = dao.findPrestitiScaduti();
-        scaduti.forEach(System.out::println);
-        em.close();
+        try {
+            PrestitoDAO dao = new PrestitoDAO(em);
+            List<Prestito> scaduti = dao.findPrestitiScaduti();
+            if (scaduti.isEmpty()) {
+                System.out.println("Non ci sono prestiti scaduti.");
+            } else {
+                System.out.println("Prestiti scaduti trovati:");
+                scaduti.forEach(prestito -> {
+                    System.out.println("ID: " + prestito.getId());
+                    System.out.println("Utente: " + prestito.getUtente().getNome() + " " + prestito.getUtente().getCognome());
+                    System.out.println("Elemento: " + prestito.getElementoPrestato().getTitolo());
+                    System.out.println("Data inizio prestito: " + prestito.getDataInizioPrestito());
+                    System.out.println("Data restituzione prevista: " + prestito.getDataRestituzionePrevista());
+                    System.out.println("--------------------");
+                });
+            }
+        } finally {
+            em.close();
+        }
     }
 }

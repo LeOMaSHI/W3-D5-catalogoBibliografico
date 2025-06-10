@@ -66,6 +66,11 @@ public class PrestitoDAO {
     }
 
     public List<Prestito> findPrestitiScaduti() {
-        return List.of();
+        LocalDate today = LocalDate.now();
+        return em.createQuery(
+                "SELECT p FROM Prestito p WHERE p.dataRestituzionePrevista < :today AND p.dataRestituzioneEffettiva IS NULL",
+                Prestito.class)
+                .setParameter("today", today)
+                .getResultList();
     }
 }
