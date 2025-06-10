@@ -110,31 +110,38 @@ public class Main {
 
     private static void effettuaPrestito() {
         EntityManager em = emf.createEntityManager();
-        PrestitoDAO prestitoDAO = new PrestitoDAO(em);
-        UtenteDAO utenteDAO = new UtenteDAO(em);
-        ElementoCatalogoDAO catalogoDAO = new ElementoCatalogoDAO(em);
+        try {
+            em.getTransaction().begin();
+            PrestitoDAO prestitoDAO = new PrestitoDAO(em);
+            UtenteDAO utenteDAO = new UtenteDAO(em);
+            ElementoCatalogoDAO catalogoDAO = new ElementoCatalogoDAO(em);
 
-        System.out.print("Numero tessera utente: ");
-        String tessera = scanner.nextLine();
-        Utente utente = utenteDAO.findByNumeroTessera(tessera);
-        if (utente == null) {
-            System.out.println("Utente non trovato.");
+            System.out.print("Numero tessera utente: ");
+            String tessera = scanner.nextLine();
+            Utente utente = utenteDAO.findByNumeroTessera(tessera);
+            if (utente == null) {
+                System.out.println("Utente non trovato.");
+                return;
+            }
+
+            System.out.print("ISBN dell'elemento da prendere in prestito: ");
+            String isbn = scanner.nextLine();
+            ElementoCatalogo elemento = catalogoDAO.findByISBN(isbn);
+            if (elemento == null) {
+                System.out.println("Elemento non trovato.");
+                return;
+            }
+
+            Prestito prestito = new Prestito(utente, elemento, LocalDate.now());
+            prestitoDAO.save(prestito);
+            em.getTransaction().commit();
+            System.out.println("Prestito creato con successo: " + prestito);
+        } catch (Exception e) {
+            em.getTransaction().rollback();
+            e.printStackTrace();
+        } finally {
             em.close();
-            return;
         }
-
-        System.out.print("ISBN dell'elemento da prendere in prestito: ");
-        String isbn = scanner.nextLine();
-        ElementoCatalogo elemento = catalogoDAO.findByISBN(isbn);
-        if (elemento == null) {
-            System.out.println("Elemento non trovato.");
-            em.close();
-            return;
-        }
-
-        Prestito prestito = new Prestito(utente, elemento, LocalDate.now());
-        prestitoDAO.save(prestito);
-        em.close();
     }
 
     private static void ricercaPerIsbn() {
@@ -153,12 +160,29 @@ public class Main {
 
     private static void ricercaPrestitiPerTessera() {
         EntityManager em = emf.createEntityManager();
-        PrestitoDAO dao = new PrestitoDAO(em);
-        System.out.print("Numero tessera: ");
-        String tessera = scanner.nextLine();
-        List<Prestito> prestiti = dao.findPrestitiAttiviByTessera(tessera);
-        prestiti.forEach(System.out::println);
-        em.close();
+        try {
+            PrestitoDAO dao = new PrestitoDAO(em);
+            UtenteDAO utenteDAO = new UtenteDAO(em);
+            System.out.print("Numero tessera: ");
+            String tessera = scanner.nextLine();
+            
+            Utente utente = utenteDAO.findByNumeroTessera(tessera);
+            if (utente == null) {
+                System.out.println("Utente non trovato con tessera: " + tessera);
+                return;
+            }
+            System.out.println("Utente trovato: " + utente);
+
+            List<Prestito> prestiti = dao.findPrestitiAttiviByTessera(tessera);
+            if (prestiti.isEmpty()) {
+                System.out.println("Nessun prestito attivo trovato per questa tessera.");
+            } else {
+                System.out.println("Prestiti attivi trovati:");
+                prestiti.forEach(System.out::println);
+            }
+        } finally {
+            em.close();
+        }
     }
 
     private static void ricercaPrestitiScaduti() {

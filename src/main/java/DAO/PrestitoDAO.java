@@ -8,8 +8,10 @@ import java.time.LocalDate;
 import java.util.List;
 
 public class PrestitoDAO {
+    private EntityManager em;
 
     public PrestitoDAO(EntityManager em) {
+        this.em = em;
     }
 
     public void salva(Prestito prestito) {
@@ -50,10 +52,17 @@ public class PrestitoDAO {
     }
 
     public void save(Prestito prestito) {
+        em.persist(prestito);
     }
 
     public List<Prestito> findPrestitiAttiviByTessera(String tessera) {
-        return List.of();
+        List<Prestito> prestiti = em.createQuery(
+                "SELECT p FROM Prestito p WHERE p.utente.numeroTessera = :tessera AND p.dataRestituzioneEffettiva IS NULL",
+                Prestito.class)
+                .setParameter("tessera", tessera)
+                .getResultList();
+        System.out.println("Query executed. Found " + prestiti.size() + " active loans for tessera: " + tessera);
+        return prestiti;
     }
 
     public List<Prestito> findPrestitiScaduti() {
